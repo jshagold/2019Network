@@ -106,37 +106,38 @@ int main(int argc, char *argv[])
         
         /* 요청받은 파일이름 = file_name*/
         char *file_name = strtok(file_buf,"/");
+        
         printf("file name = %s\n", file_name);
+
+        
+        
         
         /* 요청받은 파일을 open */
-        FILE *fp = fopen((const char*)file_name,"r");
-        if(fp == NULL){
-            printf("fopen에들어간 파일명 :%s\n", (const char*)file_name);
+        FILE *fp;
+        
+        
+        if((fp = fopen((const char*)file_name,"r")) == NULL){
             
             
-            printf("hi3");
-            
+            bzero(buffer, sizeof(buffer));
             sprintf(buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: 140\r\nContent-Type: text/html\r\n\r\n");
             int a;
             
             
-            printf("hi2");
             
             n = write(clisockfd,buffer,strlen(buffer));
             if(n < 0)
                 error("Error writing to socket");
             
             
-            printf("hi1");
             
             FILE *notfound_fp = fopen("notfound.html","r");
             
-            printf("hi");
             
             
             char n_read_file[BUF_NUM];
             /* 파일 read */
-            n = fread(n_read_file, 1, BUF_NUM, fp);
+            n = fread(n_read_file, 1, BUF_NUM, notfound_fp);
             
             m = write(clisockfd, n_read_file, n);
             
@@ -149,6 +150,7 @@ int main(int argc, char *argv[])
             fclose(fp);
         }
         else {
+            printf("%s\n", "hi");
             /* 파일크기 구하기 */
             int file_size;
             FILE *sfp = fopen((const char*)file_name,"r");
@@ -214,12 +216,10 @@ int main(int argc, char *argv[])
                 n = fread(read_file, 1, BUF_NUM, fp);
                 
                 m = write(clisockfd, read_file, n);
-                printf("n:%d, m:%d\n",n,m);
                 if(m < 0)
                     error("Error writing to socket");
                 if(n < BUF_NUM)
                 {
-                    printf("write while break\n");
                     break;
                 }
             }
