@@ -72,10 +72,9 @@ int main(int argc, char *argv[])
         
         
         
-        /* http error code 식별자 */
+        /* http error code 식별자선언, 초기화 */
         int http_error = 0;
-        
-        
+        /* 에러체크,데이터크기에 이용할 상수선언 */
         int n,m;
         
         while(1){
@@ -83,16 +82,15 @@ int main(int argc, char *argv[])
             /* buffer초기화 */
             bzero(buffer,BUF_NUM);
             
+            /* n: read()에서 읽어들인 데이터크기 */
             n = read(clisockfd,buffer,BUF_NUM); //Read is a block function. It will read at most 255 bytes
-            
             if (n < 0) error("ERROR reading from socket");
             
             printf("Here is the message: \n%s\n",buffer);
             
-            
+            /* 더이상 받을 메세지가 없으면 반복종료 */
             if(n < BUF_NUM)
                 break;
-            /* 더이상 받을 메세지가 없으면 반복종료 */
         }
         
         
@@ -100,55 +98,48 @@ int main(int argc, char *argv[])
         /* request message parsing */
         char *f_cut_buf = strtok(buffer,"\r\n");
         char *s_cut_buf = strtok(f_cut_buf," ");
-        
         char *file_buf = strtok(NULL," ");
-        printf("need file=====  %s\n",file_buf);
         
-        /* 요청받은 파일이름 = file_name*/
+        /* 요청받은 파일이름 = file_name */
         char *file_name = strtok(file_buf,"/");
-        printf("file name = %s\n", file_name);
+        
+        
         
         /* 요청받은 파일을 open */
-        FILE *fp = fopen((const char*)file_name,"r");
-        if(fp == NULL){
-            printf("fopen에들어간 파일명 :%s\n", (const char*)file_name);
-            
-            
-            printf("hi3");
-            
+        FILE *fp;
+        
+        /* 파일이 있는지 없는지 확인 */
+        if((fp = fopen((const char*)file_name,"r")) == NULL){
+            /* 파일이 없는경우 not found 화면을 출력 */
+            bzero(buffer, sizeof(buffer));
             sprintf(buffer, "HTTP/1.1 404 Not Found\r\nContent-Length: 140\r\nContent-Type: text/html\r\n\r\n");
             int a;
             
             
-            printf("hi2");
-            
+            /* n: write()에러체크 상수 */
             n = write(clisockfd,buffer,strlen(buffer));
             if(n < 0)
                 error("Error writing to socket");
             
-            
-            printf("hi1");
-            
+            /* notfound파일 */
             FILE *notfound_fp = fopen("notfound.html","r");
-            
-            printf("hi");
-            
             
             char n_read_file[BUF_NUM];
             /* 파일 read */
-            n = fread(n_read_file, 1, BUF_NUM, fp);
+            /* n: fread()에서 읽어들인 파일의 크기, m: write()에러체크 상수 */
+            n = fread(n_read_file, 1, BUF_NUM, notfound_fp);
             
             m = write(clisockfd, n_read_file, n);
-            
             if(m < 0)
                 error("Error writing to socket");
             
             
             fclose(notfound_fp);
-            
             fclose(fp);
         }
         else {
+            /* 파일이 있는경우 파일출력 */
+        
             /* 파일크기 구하기 */
             int file_size;
             FILE *sfp = fopen((const char*)file_name,"r");
@@ -158,12 +149,11 @@ int main(int argc, char *argv[])
             printf("fp의 크기 :%d\n",file_size);
             fclose(sfp);
             
-            
+
             /* 요청받은 파일의 확장자 = file_type */
             char *file_type_before = strtok(file_name,".");
             char *file_type = strtok(NULL, ".");
             printf("file type: %s\n", file_type);
-            
             
             
             /* 요청받은 파일의 확장자 결정 */
@@ -189,11 +179,8 @@ int main(int argc, char *argv[])
             bzero(buffer,1024);
             
             
-            
             /* 보내야하는 response message */
             sprintf(buffer, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: %s\r\n\r\n", file_size, input_ftype);
-            /* response message에 파일추가 */
-            
             
             
             /* write실행 */
@@ -203,9 +190,7 @@ int main(int argc, char *argv[])
             /* 읽을파일을 저장할 배열설정 */
             char read_file[BUF_NUM];
             
-            
-            
-            
+            /* 받아 올 파일 반복 */
             while(1)
             {
                 bzero(read_file,BUF_NUM);
@@ -214,22 +199,17 @@ int main(int argc, char *argv[])
                 n = fread(read_file, 1, BUF_NUM, fp);
                 
                 m = write(clisockfd, read_file, n);
-                printf("n:%d, m:%d\n",n,m);
                 if(m < 0)
                     error("Error writing to socket");
                 if(n < BUF_NUM)
                 {
-                    printf("write while break\n");
                     break;
                 }
             }
             
-            
-            
             fclose(fp);
         }
         close(clisockfd);
-        printf("finish!!!!!!!!!!!\n\n\n\n");
     }
     
     
